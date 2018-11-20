@@ -71,11 +71,16 @@ class Cron extends Operation {
 
 	var hourMinute = "every minute";
 	if (minute != '*' && hour != '*')
+		if (hour.length < 2) {
+			hour = "0" + hour;
+		}
 		hourMinute = hour + ":" + minute;
         if (minute != '*' && hour == '*')
 		hourMinute = "minute " + minute.replace('0', '');
 	if (minute == '*' && hour != '*')
 		hourMinute = "every minute past hour " + hour;
+	if (minute == '*' && hour == '*')
+		hourMinute = "every minute";
 
 	returnStatement = returnStatement + " " + hourMinute;
 
@@ -89,8 +94,6 @@ class Cron extends Operation {
 		dayOfMonthStatement = "on day-of-month " + dayOfMonth;
 	}
 
-	if (dayOfMonthStatement != "")
-		returnStatement = returnStatement + " " + dayOfMonthStatement;
 		
 	// Month controller
 	var month = inputArray[3];
@@ -140,9 +143,49 @@ class Cron extends Operation {
 	        	monthStatement = "";
 		} 
 
-	if (monthStatement != "")
-		returnStatement = returnStatement + " " + monthStatement;
+	// Day-of-week Controller
+	var day = inputArray[4];
+	var dayStatement = "";
+	if (day != "*")
+		if (parseInt(day) > 7 || parseInt(day) < 1)
+			return "month is not valid, please use between 1 and 12 or *";
+		dayStatement = "on ";
+		switch(parseInt(day)) {
+    		case 1:
+	        	dayStatement = dayStatement + "Monday";
+        		break;
+	    	case 2:
+	        	dayStatement = dayStatement + "Tuesday";
+	        	break;
+	    	case 3:
+	        	dayStatement = dayStatement + "Wednesday";
+	        	break;
+	    	case 4:
+	        	dayStatement = dayStatement + "Thursday";
+	        	break;
+	    	case 5:
+	        	dayStatement = dayStatement + "Friday";
+	        	break;
+	    	case 6:
+	        	dayStatement = dayStatement + "Saturday";
+	        	break;
+	    	case 7:
+	        	dayStatement = dayStatement + "Sunday";
+	        	break;
+	    	default:
+	        	dayStatement = "";
+		} 
 
+	// Return statement Controller
+	if (dayStatement != "" && monthStatement != "" && dayOfMonthStatement != "") {
+		returnStatement = returnStatement + " " + dayOfMonthStatement + " and " + dayStatement + " " + monthStatement + "first"; 
+	} else if (dayStatement != "" && monthStatement != "" && dayOfMonthStatement == "") {
+		returnStatement = returnStatement + " " + dayStatement + " " + monthStatement + "second";
+	} else if (dayStatement != "" && monthStatement == "" && dayOfMonthStatement == "") {
+		returnStatement = returnStatement + " " + dayStatement + "third";
+	} else {
+		returnStatement = returnStatement + " " + dayOfMonthStatement + " " + monthStatement + " " + dayStatement + "fourth";
+	}
         return returnStatement;
     }
 
