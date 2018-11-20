@@ -40,7 +40,38 @@ class Cron extends Operation {
      */
     run(input, args) {
         const statement = args[0];
-        return "0 0 1,15 * 3" + input;
+        // Parameters to use in statement
+        // every, day-of-week, day-of-month, on, in,
+        var inputArray = input.toLowerCase().split(" ");
+
+	var returnStatement = "At";
+
+        if (inputArray.length < 5 || inputArray.length > 6)
+		return "not a valid length for a CRON expression";
+	
+	var minute = inputArray[0];
+	if (minute != "*")
+		if (parseInt(minute) > 59 || parseInt(minute) < 0)
+			return "minute is not valid, please use between 0-59 or *";
+		else if (minute.length < 2)
+			minute = "0" + minute;
+        
+	var hour = inputArray[1];
+	if (hour != "*")
+		if (parseInt(hour) > 23 || parseInt(hour) < 0)
+			return "hour is not valid, please use between 0-23 or *";
+
+	var hourMinute = "every minute";
+	if (minute != '*' && hour != '*')
+		hourMinute = hour + ":" + minute;
+        if (minute != '*' && hour == '*')
+		hourMinute = "minute " + minute.replace('0', '');
+	if (minute == '*' && hour != '*')
+		hourMinute = "every minute past hour " + hour;
+
+	returnStatement = returnStatement + " " + hourMinute;
+
+        return returnStatement;
     }
 
 }
