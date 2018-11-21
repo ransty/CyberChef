@@ -26,9 +26,9 @@ class Cron extends Operation {
         this.outputType = "string";
         this.args = [
             {
-                name: "English Statement",
+                name: "At every minute past hour 4 in February",
                 type: "string",
-                value: "At 00:00 on day-of-month 1 and 15 and on Wednesday"
+                value: "* 4 * 2 *"
             },
         ];
     }
@@ -42,35 +42,36 @@ class Cron extends Operation {
         const statement = args[0];
 
         var inputArray = input.toLowerCase().split(" ");
-
-	// work out how to stop anything but *, number, , and -
-	//for (var j = 0; j < inputArray.length; j++) {
-	//	if (/^\d+$/.test(inputArray[j]) == false) {
-	//		return "That is a NOT a number";
-	//	}
-	//}
-
+	if (inputArray.length != 5)
+		return "not a valid CRON expression";
+	var format = /[!@#$%^&()_+\=\[\]{};':"\\|,.<>\/?a-zA-Z]/;
+	for (var i = 0; i < inputArray.length; i++) {
+		if (inputArray[i] == "" || format.test(inputArray[i]) == true) {
+			return "not a valid CRON expression";
+		}
+	}	
+	
+	var minute = inputArray[0];
+	var hour = inputArray[1];
+	var dayOfMonth = inputArray[2];
+	var month = inputArray[3];
+	var day = inputArray[4];
 	var returnStatement = "At";
-
-        if (inputArray.length < 5 || inputArray.length > 5)
-		return "not a valid length for a CRON expression";
 	
 	// Minute Controller
-	var minute = inputArray[0];
-	if (minute != "*")
+	if (minute != "*" && minute != "")
 		if (parseInt(minute) > 59 || parseInt(minute) < 0)
 			return "minute is not valid, please use between 0-59 or *";
 		else if (minute.length < 2)
 			minute = "0" + minute;
         
 	// Hour Controller
-	var hour = inputArray[1];
-	if (hour != "*")
-		if (parseInt(hour) > 23 || parseInt(hour) < 0)
+	if (hour != "*" && hour != "")
+		if (parseInt(minute) > 23 || parseInt(minute) < 0)
 			return "hour is not valid, please use between 0-23 or *";
 
 	var hourMinute = "every minute";
-	if (minute != '*' && hour != '*')
+	if (minute != '*' && hour != '*' && minute.includes("-") == false && hour.includes("-") == false)
 		if (hour.length < 2) {
 			hour = "0" + hour;
 		}
@@ -81,22 +82,28 @@ class Cron extends Operation {
 		hourMinute = "every minute past hour " + hour;
 	if (minute == '*' && hour == '*')
 		hourMinute = "every minute";
+	// check if there is a range included for minute
+	if (minute.includes("-") && hour.includes("-") == false)
+		hourMinute = "every minute from " + minute.split('-').splice(0, 1) + " through " + minute.split('-').splice(1, 1) + " past hour " + hour;
+	if (hour.includes("-") && minute.includes("-") == false)
+		if (parseInt(hour.split('-').splice(0, 1)) >= parseInt(hour.split('-').splice(1, 1)))
+			return "not a valid CRON expression";
+		hourMinute = "minute " + minute + " past every hour from " + hour.split('-').splice(0, 1) + " through " + hour.split('-').splice(1, 1);
+	if (minute.includes("-") && hour.includes("-"))
+		hourMinute = "every minute from " + minute.split('-').splice(0, 1) + " through " + minute.split('-').splice(1, 1) + " past every hour from " + hour.split('-').splice(0, 1) + " through " + hour.split('-').splice(1, 1);
 
 	returnStatement = returnStatement + " " + hourMinute;
 
 	// Day of Month Controller
-	var dayOfMonth = inputArray[2];
 	var dayOfMonthStatement = "";
 	if (dayOfMonth != "*") {
-		if (parseInt(dayOfMonth) > 31 || parseInt(dayOfMonth) < 1) { 
+		if (parseInt(dayOfMonth) > 31 || parseInt(dayOfMonth) < 1)
 			return "day-of-month is not valid, please use between 1 and 31 or *";
-		}
 		dayOfMonthStatement = "on day-of-month " + dayOfMonth;
 	}
 
 		
 	// Month controller
-	var month = inputArray[3];
 	var monthStatement = "";
 	if (month != "*")
 		if (parseInt(month) > 12 || parseInt(month) < 1)
@@ -144,11 +151,10 @@ class Cron extends Operation {
 		} 
 
 	// Day-of-week Controller
-	var day = inputArray[4];
 	var dayStatement = "";
 	if (day != "*")
 		if (parseInt(day) > 7 || parseInt(day) < 1)
-			return "month is not valid, please use between 1 and 12 or *";
+			return "day is not valid, please use between 1 and 7 or *";
 		dayStatement = "on ";
 		switch(parseInt(day)) {
     		case 1:
@@ -178,18 +184,17 @@ class Cron extends Operation {
 
 	// Return statement Controller
 	if (dayStatement != "" && monthStatement != "" && dayOfMonthStatement != "") {
-		returnStatement = returnStatement + " " + dayOfMonthStatement + " and " + dayStatement + " " + monthStatement + "first"; 
+		return returnStatement + " " + dayOfMonthStatement + " and " + dayStatement + " " + monthStatement; 
 	} else if (dayStatement != "" && monthStatement != "" && dayOfMonthStatement == "") {
-		returnStatement = returnStatement + " " + dayStatement + " " + monthStatement + "second";
-	} else if (dayStatement != "" && monthStatement == "" && dayOfMonthStatement == "") {
-		returnStatement = returnStatement + " " + dayStatement + "third";
+		return returnStatement + " " + dayStatement + " " + monthStatement;
+	} else if (dayStatement!= "" && monthStatement == "" && dayOfMonthStatement == "") {
+		return returnStatement + " " + dayStatement;
+	} else if (hour != "" && monthStatement != "" && dayOfMonthStatement == "") {
+		return returnStatement + " " + monthStatement + " " + dayStatement;
 	} else {
-		returnStatement = returnStatement + " " + dayOfMonthStatement + " " + monthStatement + " " + dayStatement + "fourth";
+		return returnStatement + " " + dayOfMonthStatement + " " + monthStatement + " " + dayStatement;
 	}
-    
-    return returnStatement;
     }
-
 }
 
 export default Cron;
