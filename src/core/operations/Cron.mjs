@@ -59,6 +59,32 @@ class Cron extends Operation {
     }
 
     /**
+     * @description Generate ordinal numeral for a list of numbers with / contained
+     * @param {string} list
+     * @returns {string} ordinal
+     */
+    generateOrdinalNumerals(list) {
+    	var secondNumber = parseInt(list.split("\/").splice(1, 1));
+        var s = ["th", "st", "nd", "rd"], v = secondNumber % 100;
+        return secondNumber + (s[(v - 20) % 10] || s[v] || s[0]);
+    }
+
+    /**
+     * @description Compare slash CRON expression and make sure it's within bounds
+     * @param {string} input
+     * @param {int} lowerBound
+     * @param {int} upperBound
+     * @returns {boolean}
+     */
+    compareSlashes(input, lowerBound, upperBound) {
+        var secondNumber = input.split("\/").splice(1, 1);
+        if (secondNumber == "" || secondNumber > upperBound || secondNumber < lowerBound) {
+            return true;
+        }
+	return false;
+    }
+
+    /**
      * @param {string} input
      * @param {Object[]} args
      * @returns {string}
@@ -98,11 +124,10 @@ class Cron extends Operation {
             return "invalid CRON expression";
         }
 
-        if (minute.includes("\/")) {
-            var secondMinute = minute.split("\/").splice(1, 1);
-            if (secondMinute == "") {
-                return "not a valid CRON expression";
-            }
+        if (minute.includes("\/") && this.compareSlashes(minute, 0, 59)) {
+            return "invalid CRON expression";
+        } else {
+	    var secondMinute = minute.split("\/").splice(1, 1);
         }
 
         var minuteArray = []
@@ -129,19 +154,16 @@ class Cron extends Operation {
         if (hour.includes(",")) {
             hourArray = hour.split(",");
             for (var i = 0; i < hourArray.length; i++) {
-                if (hourArray[i] == "") {
-                    return "not a valid CRON expression";
-                } else if (this.compareLengths(hourArray[i], 0, 23)) {
-                    return "hour is not valid, please use between 0-23 or *";
+                if (hourArray[i] == "" || this.compareLengths(hourArray[i], 0, 23)) {
+                    return "invalid CRON expression";
                 }
             }
         }
 
-        if (hour.includes("\/")) {
-            var secondHour = hour.split("\/").splice(1, 1);
-            if (secondHour == "") {
-                return "not a valid CRON expression";
-            }
+        if (hour.includes("\/") && this.compareSlashes(hour, 0, 23)) {
+            return "invalid CRON expression";
+        } else {
+	    var secondHour = hour.split("\/").splice(1, 1);
         }
 
         var hourMinute = "every minute";
@@ -214,16 +236,11 @@ class Cron extends Operation {
             var secondMinute = ""
             var secondHour = ""
             if (minute.includes("\/")) {
-                secondMinute = parseInt(minute.split("\/").splice(1, 1));
-                var s = ["th", "st", "nd", "rd"],
-                    v = secondMinute % 100;
-                secondMinute = secondMinute + (s[(v - 20) % 10] || s[v] || s[0]);
+		secondMinute = this.generateOrdinalNumerals(minute);
             }
+
             if (hour.includes("\/")) {
-                secondHour = parseInt(hour.split("\/").splice(1, 1));
-                var s = ["th", "st", "nd", "rd"],
-                    v = secondHour % 100;
-                secondHour = secondHour + (s[(v - 20) % 10] || s[v] || s[0]);
+                secondHour = this.generateOrdinalNumerals(hour);
             }
 
             var slashArray = [];
@@ -265,33 +282,32 @@ class Cron extends Operation {
         // Day of Month Controller
         var dayOfMonthStatement = "";
         if (dayOfMonth != "*") {
-            if (parseInt(dayOfMonth) > 31 || parseInt(dayOfMonth) < 1) {
-                return "day-of-month is not valid, please use between 1 and 31 or *";
+            if (this.compareLengths(dayOfMonth, 1, 31)) {
+                return "invalid CRON expression";
             }
-            if (dayOfMonth.includes("-")) {
-                if ((parseInt(dayOfMonth.split('-').splice(0, 1)) >= parseInt(dayOfMonth.split('-').splice(1, 1)))) {
-                    return "not a valid CRON expression";
-                } else if ((dayOfMonth.split('-').splice(0, 1) == "" || dayOfMonth.split("-").splice(1, 1) == "")) {
-                    return "not a valid CRON expression";
-                } else {
-                    dayOfMonthStatement = "on every day-of-month from " + dayOfMonth.split('-').splice(0, 1) + " through " + dayOfMonth.split('-').splice(1, 1);
-                }
-            } else {
-                dayOfMonthStatement = "on day-of-month " + dayOfMonth;
-            }
-        }
 
+            if (dayOfMonth.includes("-") && this.compareRanges(dayOfMonth, 1, 31)) {
+ 		    return "invalid CRON expression";
+            } else {
+                    dayOfMonthStatement = "on every day-of-month from " + dayOfMonth.split('-').splice(0, 1) + " through " + dayOfMonth.split('-').splice(1, 1);
+            }
+
+         } else {
+            dayOfMonthStatement = "on day-of-month " + dayOfMonth;
+         }
 
         // Month controller
         var monthStatement = "";
         var months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
         if (month != "*") {
-            if (parseInt(month) > 12 || parseInt(month) < 1)
-                return "month is not valid, please use between 1 and 12 or *";
+            if (this.compareLengths(month, 1, 12)) {
+                return "invalid CRON expression";
+            }
+
             if (month.includes("-")) {
-                if (parseInt(month.split('-').splice(0, 1)) >= parseInt(month.split('-').splice(1, 1))) {
-                    return "not a valid CRON expression";
-                }
+		if (this.compareRanges(month, 1, 12)) {
+		    return "invalid CRON expression";
+		}
                 monthStatement = "in every month from " + months[parseInt(month.split('-').splice(0, 1)) - 1] + " through " + months[parseInt(month.split('-').splice(1, 1)) - 1];
             } else {
                 monthStatement = "in " + months[parseInt(month) - 1];
@@ -302,16 +318,17 @@ class Cron extends Operation {
         var dayStatement = "";
         var days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
         if (day != "*") {
-            if (parseInt(day) > 7 || parseInt(day) < 1)
+            if (this.compareLengths(day, 1, 7)) {
                 return "day is not valid, please use between 1 and 7 or *";
+	    }
             dayStatement = "on ";
             if (day.includes("-")) {
-                if (parseInt(day.split('-').splice(0, 1)) >= parseInt(day.split('-').splice(1, 1))) {
+                if (this.compareRanges(day, 1, 7)) {
                     return "not a valid CRON expression";
                 }
-                dayStatement = "on every day-of-week from " + days[parseInt(day.split('-').splice(0, 1))] + " through " + days[parseInt(day.split('-').splice(1, 1)) - 1];
+                dayStatement = "on every day-of-week from " + days[parseInt(day.split('-').splice(0, 1))-1] + " through " + days[parseInt(day.split('-').splice(1, 1)) - 1];
             } else {
-                dayStatement = "on " + days[parseInt(day)];
+                dayStatement = "on " + days[parseInt(day)-1];
             }
         }
 
