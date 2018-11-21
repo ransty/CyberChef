@@ -197,16 +197,16 @@ class Cron extends Operation {
 
 	// Day-of-week Controller
 	var dayStatement = "";
-	var days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+	var days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 	if (day != "*") {
 		if (parseInt(day) > 7 || parseInt(day) < 1)
-			return "day is not valid, please use between 1 and 7 or *";
+			return "day is not valid, please use between 0 and 6 or *";
 		dayStatement = "on ";
 		if (day.includes("-")) { 
 			if (parseInt(day.split('-').splice(0, 1)) >= parseInt(day.split('-').splice(1, 1))) {
 				return "not a valid CRON expression";
 			}
-			dayStatement = "on every day-of-week from " + days[parseInt(day.split('-').splice(0, 1))-1] + " through " + days[parseInt(day.split('-').splice(1, 1))-1];
+			dayStatement = "on every day-of-week from " + days[parseInt(day.split('-').splice(0, 1))] + " through " + days[parseInt(day.split('-').splice(1, 1))-1];
 		} else {
 			dayStatement = "on " + days[parseInt(day)-1];
 		}
