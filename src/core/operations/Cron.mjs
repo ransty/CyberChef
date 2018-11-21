@@ -44,20 +44,20 @@ class Cron extends Operation {
         var inputArray = input.toLowerCase().split(" ");
 	if (inputArray.length != 5)
 		return "not a valid CRON expression";
-	var format = /[!@#$%^&()_+\=\[\]{};':"\\|.<>\/?a-zA-Z]/;
+	var format = /[!@#$%^&()_+\=\[\]{};':"\\|.<>?a-zA-Z]/;
 	for (var i = 0; i < inputArray.length; i++) {
 		if (inputArray[i] == "" || format.test(inputArray[i]) == true) {
 			return "not a valid CRON expression";
 		}
-	}	
-	
+	}
+
 	var minute = inputArray[0];
 	var hour = inputArray[1];
 	var dayOfMonth = inputArray[2];
 	var month = inputArray[3];
 	var day = inputArray[4];
 	var returnStatement = "At";
-	
+
 	// Minute Controller
 	if (minute != "*" && minute != "")
 		if (parseInt(minute) > 59 || parseInt(minute) < 0)
@@ -74,21 +74,30 @@ class Cron extends Operation {
 			return "not a valid CRON expression";
 		}
 	}
-	
+
+  if (minute.includes("\/")) {
+    var secondMinute = minute.split("\/").splice(1, 1);
+    if (secondMinute == "") {
+      return "not a valid CRON expression";
+    }
+  }
+
 	var minuteArray = []
 	if (minute.includes(",")) {
-		// Since we can have multiple, split the whole into an array		
+		// Since we can have multiple, split the whole into an array
 		minuteArray = minute.split(",");
 		for (var i = 0; i < minuteArray.length; i++) {
 			if (minuteArray[i] == "") {
 				return "not a valid CRON expression";
-			}
+			} else if (parseInt(minuteArray[i]) > 59 || parseInt(minuteArray[i]) < 1) {
+        return "minute is not valid, please use between 0-59 or *";
+      }
 		}
 	}
 
 	// Hour Controller
-	if (hour != "*" && hour != "") { 
-		if (parseInt(hour) > 23 || parseInt(hour) < 0) { 
+	if (hour != "*" && hour != "") {
+		if (parseInt(hour) > 23 || parseInt(hour) < 0) {
 			return "hour is not valid, please use between 0-23 or *";
 		}
 	}
@@ -106,9 +115,18 @@ class Cron extends Operation {
 		for (var i = 0; i < hourArray.length; i++) {
 			if (hourArray[i] == "") {
 				return "not a valid CRON expression";
-			}
+			} else if (parseInt(hourArray[i]) > 23 || parseInt(hourArray[i]) < 0) {
+        return "hour is not valid, please use between 0-23 or *";
+      }
 		}
 	}
+
+  if (hour.includes("\/")) {
+    var secondHour = hour.split("\/").splice(1, 1);
+    if (secondHour == "") {
+      return "not a valid CRON expression";
+    }
+  }
 
 	var hourMinute = "every minute";
 	var hourMinuteBuffer = [];
@@ -116,7 +134,7 @@ class Cron extends Operation {
 		hourMinuteBuffer.push("minute " + minuteArray.shift());
 		for (var i = 0; i < minuteArray.length; i++) {
 			if (minuteArray.length - 1 == i) {
-				hourMinuteBuffer.push(" and " + minuteArray[i]);			
+				hourMinuteBuffer.push(" and " + minuteArray[i]);
 			} else {
 				hourMinuteBuffer.push(", " + minuteArray[i]);
 			}
@@ -152,34 +170,82 @@ class Cron extends Operation {
 		}
 		hourMinute = hourMinuteBuffer.join("");
 	} else {
-		if (minute != '*' && hour != '*' && minute.includes("-") == false && hour.includes("-") == false) {
+		if (minute != '*' && hour != '*' && minute.includes("-") == false && hour.includes("-") == false && minute.includes("\/") == false) {
 			if (hour.length < 2) {
 				hour = "0" + hour;
 			}
 			hourMinute = hour + ":" + minute;
 		}
-	       	if (minute != '*' && hour == '*') {
+	  if (minute != '*' && hour == '*' && minute.includes("\/") == false) {
 			hourMinute = "minute " + minute.replace('0', '');
 		}
-		if (minute == '*' && hour != '*') {
+		if (minute == '*' && hour != '*' && minute.includes("\/") == false) {
 			hourMinute = "every minute past hour " + hour;
 		}
-		if (minute == '*' && hour == '*') {
+		if (minute == '*' && hour == '*' && minute.includes("\/") == false) {
 			hourMinute = "every minute";
 		}
 		// check if there is a range included for minute
-		if (minute.includes("-") && hour.includes("-") == false) {
+		if (minute.includes("-") && hour.includes("-") == false && minute.includes("\/") == false) {
 			hourMinute = "every minute from " + minute.split('-').splice(0, 1) + " through " + minute.split('-').splice(1, 1) + " past hour " + hour;
 		}
-		if (hour.includes("-") && minute.includes("-") == false) {
+		if (hour.includes("-") && minute.includes("-") == false && minute.includes("\/") == false) {
 			hourMinute = "minute " + minute + " past every hour from " + hour.split('-').splice(0, 1) + " through " + hour.split('-').splice(1, 1);
 		}
-		if (minute.includes("-") && hour.includes("-")) {
+		if (minute.includes("-") && hour.includes("-") && minute.includes("\/") == false) {
 			hourMinute = "every minute from " + minute.split('-').splice(0, 1) + " through " + minute.split('-').splice(1, 1) + " past every hour from " + hour.split('-').splice(0, 1) + " through " + hour.split('-').splice(1, 1);
 		}
+    var secondMinute = ""
+    var secondHour = ""
+    if (minute.includes("\/")) {
+      secondMinute = parseInt(minute.split("\/").splice(1, 1));
+      var s=["th","st","nd","rd"],
+      v=secondMinute%100;
+      secondMinute = secondMinute+(s[(v-20)%10]||s[v]||s[0]);
+    }
+    if (hour.includes("\/")) {
+      secondHour = parseInt(hour.split("\/").splice(1, 1));
+      var s=["th","st","nd","rd"],
+      v=secondHour%100;
+      secondHour = secondHour+(s[(v-20)%10]||s[v]||s[0]);
+    }
+
+    var slashArray = [];
+    if (secondMinute != "" && secondHour != "") {
+      if (secondMinute == "1st") {
+        slashArray.push("every minute from 1 through 59");
+      } else {
+        slashArray.push("every " + secondMinute + " minute from " + minute.split("\/").splice(0, 1) + " through 59");
+      }
+
+      if (secondHour == "1st") {
+        slashArray.push("past every hour from " + hour.split("\/").splice(0, 1) + " through 23");
+      } else {
+        slashArray.push("past every " + secondHour + " hour from " + hour.split("\/").splice(0, 1) + " through 23");
+      }
+      
+      hourMinute = slashArray.join(" ");
+    }
+
+
+    if (secondMinute != "" && secondHour == "") {
+      if (secondMinute == "1st") {
+        hourMinute = "every minute from 1 through 59";
+      } else {
+        hourMinute = "every " + secondMinute + " minute from " + minute.split("\/").splice(0, 1) + " through 59 past hour " + hour;
+      }
+    }
+
+    if (secondMinute == "" && secondHour != "") {
+      if (secondHour == "1st") {
+        hourMinute = "minute " + minute + " past every hour from " + hour.split("\/").splice(0, 1) + " through 23";
+      } else {
+        hourMinute = "minute " + minute + " past every " + secondHour + " hour from " + hour.split("\/").splice(0, 1) + " through 23";
+      }
+    }
 	}
 	returnStatement = returnStatement + " " + hourMinute;
-	
+
 
 	// Day of Month Controller
 	var dayOfMonthStatement = "";
@@ -187,7 +253,7 @@ class Cron extends Operation {
 		if (parseInt(dayOfMonth) > 31 || parseInt(dayOfMonth) < 1)
 			return "day-of-month is not valid, please use between 1 and 31 or *";
 		if (dayOfMonth.includes("-")) {
-			if ((parseInt(dayOfMonth.split('-').splice(0, 1)) >= parseInt(dayOfMonth.split('-').splice(1, 1)))) { 
+			if ((parseInt(dayOfMonth.split('-').splice(0, 1)) >= parseInt(dayOfMonth.split('-').splice(1, 1)))) {
 				return "not a valid CRON expression";
 			} else if ((dayOfMonth.split('-').splice(0, 1) == "" || dayOfMonth.split("-").splice(1, 1) == "")) {
 				return "not a valid CRON expression";
@@ -199,7 +265,7 @@ class Cron extends Operation {
 		}
 	}
 
-		
+
 	// Month controller
 	var monthStatement = "";
 	var months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
@@ -223,19 +289,19 @@ class Cron extends Operation {
 		if (parseInt(day) > 7 || parseInt(day) < 1)
 			return "day is not valid, please use between 1 and 7 or *";
 		dayStatement = "on ";
-		if (day.includes("-")) { 
+		if (day.includes("-")) {
 			if (parseInt(day.split('-').splice(0, 1)) >= parseInt(day.split('-').splice(1, 1))) {
 				return "not a valid CRON expression";
 			}
 			dayStatement = "on every day-of-week from " + days[parseInt(day.split('-').splice(0, 1))] + " through " + days[parseInt(day.split('-').splice(1, 1))-1];
 		} else {
-			dayStatement = "on " + days[parseInt(day)-1];
+			dayStatement = "on " + days[parseInt(day)];
 		}
 	}
 
 	// Return statement Controller
 	if (dayStatement != "" && monthStatement != "" && dayOfMonthStatement != "") {
-		return returnStatement + " " + dayOfMonthStatement + " and " + dayStatement + " " + monthStatement; 
+		return returnStatement + " " + dayOfMonthStatement + " and " + dayStatement + " " + monthStatement;
 	} else if (dayStatement != "" && monthStatement != "" && dayOfMonthStatement == "") {
 		return returnStatement + " " + dayStatement + " " + monthStatement;
 	} else if (dayStatement!= "" && monthStatement == "" && dayOfMonthStatement == "") {
