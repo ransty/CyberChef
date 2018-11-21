@@ -44,7 +44,7 @@ class Cron extends Operation {
         var inputArray = input.toLowerCase().split(" ");
 	if (inputArray.length != 5)
 		return "not a valid CRON expression";
-	var format = /[!@#$%^&()_+\=\[\]{};':"\\|,.<>\/?a-zA-Z]/;
+	var format = /[!@#$%^&()_+\=\[\]{};':"\\|.<>\/?a-zA-Z]/;
 	for (var i = 0; i < inputArray.length; i++) {
 		if (inputArray[i] == "" || format.test(inputArray[i]) == true) {
 			return "not a valid CRON expression";
@@ -62,8 +62,10 @@ class Cron extends Operation {
 	if (minute != "*" && minute != "")
 		if (parseInt(minute) > 59 || parseInt(minute) < 0)
 			return "minute is not valid, please use between 0-59 or *";
-		else if (minute.length < 2)
-			minute = "0" + minute;
+
+	if (minute.length < 2 && hour.includes(",") == false)
+		minute = "0" + minute;
+
 	if (minute.includes("-")) {
 		// Check if it actually has a legit range
 		if (parseInt(minute.split('-').splice(0, 1)) >= parseInt(minute.split('-').splice(1, 1))) {
@@ -72,9 +74,21 @@ class Cron extends Operation {
 			return "not a valid CRON expression";
 		}
 	}
+	
+	var minuteArray = []
+	if (minute.includes(",")) {
+		// Since we can have multiple, split the whole into an array		
+		minuteArray = minute.split(",");
+		for (var i = 0; i < minuteArray.length; i++) {
+			if (minuteArray[i] == "") {
+				return "not a valid CRON expression";
+			}
+		}
+	}
+
 	// Hour Controller
 	if (hour != "*" && hour != "") { 
-		if (parseInt(minute) > 23 || parseInt(minute) < 0) { 
+		if (parseInt(hour) > 23 || parseInt(hour) < 0) { 
 			return "hour is not valid, please use between 0-23 or *";
 		}
 	}
@@ -86,34 +100,65 @@ class Cron extends Operation {
 		}
 	}
 
-	var hourMinute = "every minute";
-	if (minute != '*' && hour != '*' && minute.includes("-") == false && hour.includes("-") == false) {
-		if (hour.length < 2) {
-			hour = "0" + hour;
+	var hourArray = []
+	if (hour.includes(",")) {
+		hourArray = hour.split(",");
+		for (var i = 0; i < hourArray.length; i++) {
+			if (hourArray[i] == "") {
+				return "not a valid CRON expression";
+			}
 		}
-		hourMinute = hour + ":" + minute;
 	}
-       	if (minute != '*' && hour == '*') {
-		hourMinute = "minute " + minute.replace('0', '');
-	}
-	if (minute == '*' && hour != '*') {
-		hourMinute = "every minute past hour " + hour;
-	}
-	if (minute == '*' && hour == '*') {
-		hourMinute = "every minute";
-	}
-	// check if there is a range included for minute
-	if (minute.includes("-") && hour.includes("-") == false) {
-		hourMinute = "every minute from " + minute.split('-').splice(0, 1) + " through " + minute.split('-').splice(1, 1) + " past hour " + hour;
-	}
-	if (hour.includes("-") && minute.includes("-") == false) {
-		hourMinute = "minute " + minute + " past every hour from " + hour.split('-').splice(0, 1) + " through " + hour.split('-').splice(1, 1);
-	}
-	if (minute.includes("-") && hour.includes("-")) {
-		hourMinute = "every minute from " + minute.split('-').splice(0, 1) + " through " + minute.split('-').splice(1, 1) + " past every hour from " + hour.split('-').splice(0, 1) + " through " + hour.split('-').splice(1, 1);
+
+	var hourMinute = "every minute";
+	if (minuteArray != "" && hourArray == "") {
+		hourMinute = "minute " + minuteArray.shift();
+		for (var i = 0; i < minuteArray.length; i++) {
+			if (minuteArray.length - 1 == i) {
+				hourMinute = hourMinute + " and " + minuteArray[i];			
+			} else {
+				hourMinute = hourMinute + ", " + minuteArray[i];
+			}
+		}
+		hourMinute = hourMinute + " past hour " + hour;
+	} else if (minuteArray == "" && hourArray != "") {
+		hourMinute = "minute " + minute + " past hour " + hourArray.shift();
+		for (var i = 0; i < hourArray.length; i++) {
+			if (hourArray.length - 1 == i) {
+				hourMinute = hourMinute + " and " + hourArray[i];
+			} else {
+				hourMinute = hourMinute + ", " + hourArray[i];
+			}
+		}
+	} else {
+		if (minute != '*' && hour != '*' && minute.includes("-") == false && hour.includes("-") == false) {
+			if (hour.length < 2) {
+				hour = "0" + hour;
+			}
+			hourMinute = hour + ":" + minute;
+		}
+	       	if (minute != '*' && hour == '*') {
+			hourMinute = "minute " + minute.replace('0', '');
+		}
+		if (minute == '*' && hour != '*') {
+			hourMinute = "every minute past hour " + hour;
+		}
+		if (minute == '*' && hour == '*') {
+			hourMinute = "every minute";
+		}
+		// check if there is a range included for minute
+		if (minute.includes("-") && hour.includes("-") == false) {
+			hourMinute = "every minute from " + minute.split('-').splice(0, 1) + " through " + minute.split('-').splice(1, 1) + " past hour " + hour;
+		}
+		if (hour.includes("-") && minute.includes("-") == false) {
+			hourMinute = "minute " + minute + " past every hour from " + hour.split('-').splice(0, 1) + " through " + hour.split('-').splice(1, 1);
+		}
+		if (minute.includes("-") && hour.includes("-")) {
+			hourMinute = "every minute from " + minute.split('-').splice(0, 1) + " through " + minute.split('-').splice(1, 1) + " past every hour from " + hour.split('-').splice(0, 1) + " through " + hour.split('-').splice(1, 1);
+		}
 	}
 	returnStatement = returnStatement + " " + hourMinute;
-
+	
 
 	// Day of Month Controller
 	var dayOfMonthStatement = "";
