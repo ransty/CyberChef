@@ -111,25 +111,46 @@ class Cron extends Operation {
 	}
 
 	var hourMinute = "every minute";
+	var hourMinuteBuffer = [];
 	if (minuteArray != "" && hourArray == "") {
-		hourMinute = "minute " + minuteArray.shift();
+		hourMinuteBuffer.push("minute " + minuteArray.shift());
 		for (var i = 0; i < minuteArray.length; i++) {
 			if (minuteArray.length - 1 == i) {
-				hourMinute = hourMinute + " and " + minuteArray[i];			
+				hourMinuteBuffer.push(" and " + minuteArray[i]);			
 			} else {
-				hourMinute = hourMinute + ", " + minuteArray[i];
+				hourMinuteBuffer.push(", " + minuteArray[i]);
 			}
 		}
-		hourMinute = hourMinute + " past hour " + hour;
+		hourMinuteBuffer.push(" past hour " + hour);
+		hourMinute = hourMinuteBuffer.join("");
 	} else if (minuteArray == "" && hourArray != "") {
-		hourMinute = "minute " + minute + " past hour " + hourArray.shift();
+		hourMinuteBuffer.push("minute " + minute + " past hour " + hourArray.shift());
 		for (var i = 0; i < hourArray.length; i++) {
 			if (hourArray.length - 1 == i) {
-				hourMinute = hourMinute + " and " + hourArray[i];
+				hourMinuteBuffer.push(" and " + hourArray[i]);
 			} else {
-				hourMinute = hourMinute + ", " + hourArray[i];
+				hourMinuteBuffer.push(", " + hourArray[i]);
 			}
 		}
+		hourMinute = hourMinuteBuffer.join("");
+	} else if (minuteArray != "" && hourArray != "") {
+		hourMinuteBuffer.push("minute " + minuteArray.shift());
+		for (var i = 0; i < minuteArray.length; i++) {
+			if (minuteArray.length - 1 == i) {
+				hourMinuteBuffer.push(" and " + minuteArray[i]);
+			} else {
+				hourMinuteBuffer.push(", " + minuteArray[i]);
+			}
+		}
+		hourMinuteBuffer.push(" past hour " + hourArray.shift());
+		for (var j = 0; j < hourArray.length; j++) {
+			if (hourArray.length - 1 == j) {
+				hourMinuteBuffer.push(" and " + hourArray[j]);
+			} else {
+				hourMinuteBuffer.push(", " + hourArray[j]);
+			}
+		}
+		hourMinute = hourMinuteBuffer.join("");
 	} else {
 		if (minute != '*' && hour != '*' && minute.includes("-") == false && hour.includes("-") == false) {
 			if (hour.length < 2) {
@@ -200,7 +221,7 @@ class Cron extends Operation {
 	var days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 	if (day != "*") {
 		if (parseInt(day) > 7 || parseInt(day) < 1)
-			return "day is not valid, please use between 0 and 6 or *";
+			return "day is not valid, please use between 1 and 7 or *";
 		dayStatement = "on ";
 		if (day.includes("-")) { 
 			if (parseInt(day.split('-').splice(0, 1)) >= parseInt(day.split('-').splice(1, 1))) {
