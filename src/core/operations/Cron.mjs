@@ -64,123 +64,108 @@ class Cron extends Operation {
 			return "minute is not valid, please use between 0-59 or *";
 		else if (minute.length < 2)
 			minute = "0" + minute;
-        
+	if (minute.includes("-")) {
+		// Check if it actually has a legit range
+		if (parseInt(minute.split('-').splice(0, 1)) >= parseInt(minute.split('-').splice(1, 1))) {
+			return "not a valid CRON expression";
+		} else if (minute.split('-').splice(0, 1) == "" || minute.split('-').splice(1, 1) == "") {
+			return "not a valid CRON expression";
+		}
+	}
 	// Hour Controller
-	if (hour != "*" && hour != "")
-		if (parseInt(minute) > 23 || parseInt(minute) < 0)
+	if (hour != "*" && hour != "") { 
+		if (parseInt(minute) > 23 || parseInt(minute) < 0) { 
 			return "hour is not valid, please use between 0-23 or *";
+		}
+	}
+	if (hour.includes("-")) {
+		if (parseInt(hour.split('-').splice(0, 1)) >= parseInt(hour.split('-').splice(1, 1))) {
+			return "not a valid CRON expression";
+		} else if (hour.split('-').splice(0, 1) == "" || hour.split('-').splice(1, 1) == "") {
+			return "not a valid CRON expression";
+		}
+	}
 
 	var hourMinute = "every minute";
-	if (minute != '*' && hour != '*' && minute.includes("-") == false && hour.includes("-") == false)
+	if (minute != '*' && hour != '*' && minute.includes("-") == false && hour.includes("-") == false) {
 		if (hour.length < 2) {
 			hour = "0" + hour;
 		}
 		hourMinute = hour + ":" + minute;
-        if (minute != '*' && hour == '*')
+	}
+       	if (minute != '*' && hour == '*') {
 		hourMinute = "minute " + minute.replace('0', '');
-	if (minute == '*' && hour != '*')
+	}
+	if (minute == '*' && hour != '*') {
 		hourMinute = "every minute past hour " + hour;
-	if (minute == '*' && hour == '*')
+	}
+	if (minute == '*' && hour == '*') {
 		hourMinute = "every minute";
+	}
 	// check if there is a range included for minute
-	if (minute.includes("-") && hour.includes("-") == false)
+	if (minute.includes("-") && hour.includes("-") == false) {
 		hourMinute = "every minute from " + minute.split('-').splice(0, 1) + " through " + minute.split('-').splice(1, 1) + " past hour " + hour;
-	if (hour.includes("-") && minute.includes("-") == false)
-		if (parseInt(hour.split('-').splice(0, 1)) >= parseInt(hour.split('-').splice(1, 1)))
-			return "not a valid CRON expression";
+	}
+	if (hour.includes("-") && minute.includes("-") == false) {
 		hourMinute = "minute " + minute + " past every hour from " + hour.split('-').splice(0, 1) + " through " + hour.split('-').splice(1, 1);
-	if (minute.includes("-") && hour.includes("-"))
+	}
+	if (minute.includes("-") && hour.includes("-")) {
 		hourMinute = "every minute from " + minute.split('-').splice(0, 1) + " through " + minute.split('-').splice(1, 1) + " past every hour from " + hour.split('-').splice(0, 1) + " through " + hour.split('-').splice(1, 1);
-
+	}
 	returnStatement = returnStatement + " " + hourMinute;
+
 
 	// Day of Month Controller
 	var dayOfMonthStatement = "";
 	if (dayOfMonth != "*") {
 		if (parseInt(dayOfMonth) > 31 || parseInt(dayOfMonth) < 1)
 			return "day-of-month is not valid, please use between 1 and 31 or *";
-		dayOfMonthStatement = "on day-of-month " + dayOfMonth;
+		if (dayOfMonth.includes("-")) {
+			if ((parseInt(dayOfMonth.split('-').splice(0, 1)) >= parseInt(dayOfMonth.split('-').splice(1, 1)))) { 
+				return "not a valid CRON expression";
+			} else if ((dayOfMonth.split('-').splice(0, 1) == "" || dayOfMonth.split("-").splice(1, 1) == "")) {
+				return "not a valid CRON expression";
+			} else {
+				dayOfMonthStatement = "on every day-of-month from " + dayOfMonth.split('-').splice(0, 1) + " through " + dayOfMonth.split('-').splice(1, 1);
+			}
+		} else {
+			dayOfMonthStatement = "on day-of-month " + dayOfMonth;
+		}
 	}
 
 		
 	// Month controller
 	var monthStatement = "";
-	if (month != "*")
+	var months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+	if (month != "*") {
 		if (parseInt(month) > 12 || parseInt(month) < 1)
 			return "month is not valid, please use between 1 and 12 or *";
-		monthStatement = "in ";
-		switch(parseInt(month)) {
-    		case 1:
-	        	monthStatement = monthStatement + "January";
-        		break;
-	    	case 2:
-	        	monthStatement = monthStatement + "February";
-	        	break;
-	    	case 3:
-	        	monthStatement = monthStatement + "March";
-	        	break;
-	    	case 4:
-	        	monthStatement = monthStatement + "April";
-	        	break;
-	    	case 5:
-	        	monthStatement = monthStatement + "May";
-	        	break;
-	    	case 6:
-	        	monthStatement = monthStatement + "June";
-	        	break;
-	    	case 7:
-	        	monthStatement = monthStatement + "July";
-	        	break;
-		case 8:
-			monthStatement = monthStatement + "August";
-			break;
-		case 9: 
-			monthStatement = monthStatement + "September";
-			break;
-		case 10:
-			monthStatement = monthStatement + "October";
-			break;
-		case 11:
-			monthStatement = monthStatement + "November";
-			break;
-		case 12:
-			monthStatement = monthStatement + "December";
-			break;
-	    	default:
-	        	monthStatement = "";
-		} 
+		if (month.includes("-")) {
+			if (parseInt(month.split('-').splice(0, 1)) >= parseInt(month.split('-').splice(1, 1))) {
+				return "not a valid CRON expression";
+			}
+			monthStatement = "in every month from " + months[parseInt(month.split('-').splice(0, 1))-1] + " through " + months[parseInt(month.split('-').splice(1, 1))-1];
+		} else {
+			monthStatement = "in " + months[parseInt(month)-1];
+		}
+	}
 
 	// Day-of-week Controller
 	var dayStatement = "";
-	if (day != "*")
+	var days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+	if (day != "*") {
 		if (parseInt(day) > 7 || parseInt(day) < 1)
 			return "day is not valid, please use between 1 and 7 or *";
 		dayStatement = "on ";
-		switch(parseInt(day)) {
-    		case 1:
-	        	dayStatement = dayStatement + "Monday";
-        		break;
-	    	case 2:
-	        	dayStatement = dayStatement + "Tuesday";
-	        	break;
-	    	case 3:
-	        	dayStatement = dayStatement + "Wednesday";
-	        	break;
-	    	case 4:
-	        	dayStatement = dayStatement + "Thursday";
-	        	break;
-	    	case 5:
-	        	dayStatement = dayStatement + "Friday";
-	        	break;
-	    	case 6:
-	        	dayStatement = dayStatement + "Saturday";
-	        	break;
-	    	case 7:
-	        	dayStatement = dayStatement + "Sunday";
-	        	break;
-	    	default:
-	        	dayStatement = "";
-		} 
+		if (day.includes("-")) { 
+			if (parseInt(day.split('-').splice(0, 1)) >= parseInt(day.split('-').splice(1, 1))) {
+				return "not a valid CRON expression";
+			}
+			dayStatement = "on every day-of-week from " + days[parseInt(day.split('-').splice(0, 1))-1] + " through " + days[parseInt(day.split('-').splice(1, 1))-1];
+		} else {
+			dayStatement = "on " + days[parseInt(day)-1];
+		}
+	}
 
 	// Return statement Controller
 	if (dayStatement != "" && monthStatement != "" && dayOfMonthStatement != "") {
