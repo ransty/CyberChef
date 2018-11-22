@@ -19,14 +19,14 @@ class Cron extends Operation {
 
         this.name = "Cron";
         this.module = "Default";
-        this.description = "Convert an English statement to a CRON expression";
+        this.description = "Convert an CRON expression to an English statement";
         this.infoURL = "https://en.wikipedia.org/wiki/Cron#CRON_expression";
         this.inputType = "string";
         this.outputType = "string";
         this.args = [{
-            name: "At every minute past hour 4 in February",
+            name: "* 4 * 2 *",
             type: "string",
-            value: "* 4 * 2 *"
+            value: "At every minute past hour 4 in February"
         }, ];
     }
 
@@ -187,7 +187,11 @@ class Cron extends Operation {
 		var firstDayMonth = dayOfMonth.split('\/').splice(0, 1);
 	        var secondDayMonth = this.generateOrdinalNumerals(dayOfMonth);
 		if (secondDayMonth == "1st") {
-			dayOfMonthStatement = "on every day-of-month from " + firstDayMonth + " through 31";
+			if (firstDayMonth == "*") {
+				dayOfMonthStatement = "on every day-of-month";
+			} else {
+				dayOfMonthStatement = "on every day-of-month from " + firstDayMonth + " through 31";
+			}
 		} else if (secondDayMonth != "" && firstDayMonth != "*") {
 			dayOfMonthStatement = "on every " + secondDayMonth + " day-of-month from " + firstDayMonth + " through 31";
 		} else {
@@ -291,35 +295,35 @@ class Cron extends Operation {
                 secondHour = this.generateOrdinalNumerals(hour);
             }
 
-            var slashArray = [];
+            var slashBuffer = [];
             if (secondMinute != "" && secondHour != "") {
                     if (secondMinute == "1st") {
 			if (firstMinute == "*") {
-		    		slashArray.push("every minute");
+		    		slashBuffer.push("every minute");
 			} else {
-	                        slashArray.push("every minute from 1 through 59");
+	                        slashBuffer.push("every minute from 1 through 59");
 			}
 	            } else {
 			if (firstMinute == "*") {
-				slashArray.push("every " + secondMinute + " minute");
+				slashBuffer.push("every " + secondMinute + " minute");
 			} else {
-			        slashArray.push("every " + secondMinute + " minute from " + minute.split("\/").splice(0, 1) + " through 59");
+			        slashBuffer.push("every " + secondMinute + " minute from " + minute.split("\/").splice(0, 1) + " through 59");
 			}
 
                 if (secondHour == "1st") {
 			if (firstHour == "*") {
-				slashArray.push("past every hour");
+				slashBuffer.push("past every hour");
 			} else {
-	        	        slashArray.push("past every hour from " + hour.split("\/").splice(0, 1) + " through 23");
+	        	        slashBuffer.push("past every hour from " + hour.split("\/").splice(0, 1) + " through 23");
 			}
         	    } else {
 			if (firstHour == "*") {
-				slashArray.push("past every " + secondHour + " hour");
+				slashBuffer.push("past every " + secondHour + " hour");
 			} else {
-	        	        slashArray.push("past every " + secondHour + " hour from " + hour.split("\/").splice(0, 1) + " through 23");
+	        	        slashBuffer.push("past every " + secondHour + " hour from " + hour.split("\/").splice(0, 1) + " through 23");
 			}
         	    }
-                    hourMinute = slashArray.join(" ");
+                    hourMinute = slashBuffer.join(" ");
         	}
             }
 
@@ -327,41 +331,38 @@ class Cron extends Operation {
             if (secondMinute != "" && secondHour == "") {
                 if (secondMinute == "1st") {
 			if (firstMinute == "*") {
-				slashArray.push("every minute");
+				slashBuffer.push("every minute");
 			} else {
-		                slashArray.push("every minute from 1 through 59");
+		                slashBuffer.push("every minute from 1 through 59");
 			}
                 } else {
 			if (firstMinute == "*") {
-				slashArray.push("every " + secondMinute + " minute past hour " + hour);
+				slashBuffer.push("every " + secondMinute + " minute past hour " + hour);
 			} else {
-	                        slashArray.push("every " + secondMinute + " minute from " + minute.split("\/").splice(0, 1) + " through 59 past hour " + hour);
+	                        slashBuffer.push("every " + secondMinute + " minute from " + minute.split("\/").splice(0, 1) + " through 59 past hour " + hour);
 			}
                 }
-		hourMinute = slashArray.join(" ");
+		hourMinute = slashBuffer.join(" ");
             }
 
             if (secondMinute == "" && secondHour != "") {
                 if (secondHour == "1st") {
 			if (firstHour == "*") {
-				slashArray.push("past every hour");
+				slashBuffer.push("past every hour");
 			} else {
-	                    hourMinute = "minute " + minute + " past every hour from " + hour.split("\/").splice(0, 1) + " through 23";
+	                    slashBuffer.push("minute " + minute + " past every hour from " + hour.split("\/").splice(0, 1) + " through 23");
 			}
                 } else {
 			if (firstHour == "*") {
-				slashArray.push("past every " + secondHour + " hour");
+				slashBuffer.push("past every " + secondHour + " hour");
 			} else {
-	                        slashArray.push("minute " + minute + " past every " + secondHour + " hour from " + hour.split("\/").splice(0, 1) + " through 23");
+	                        slashBuffer.push("minute " + minute + " past every " + secondHour + " hour from " + hour.split("\/").splice(0, 1) + " through 23");
 			}
                 }
-		hourMinute = slashArray.join(" ");
+		hourMinute = slashBuffer.join(" ");
             }
         }
         returnStatement = returnStatement + " " + hourMinute;
-
-
-        // Day of Month Controller
 
 
         // Month controller
@@ -381,7 +382,11 @@ class Cron extends Operation {
 		var firstMonth = month.split('\/').splice(0, 1);
 	        var secondMonth = this.generateOrdinalNumerals(month);
 		if (secondMonth == "1st") {
-			monthStatement = "in every month from " + months[firstMonth-1] + " through " + months[11];
+			if (firstMonth == "*") {
+				monthStatement = "in every month";
+			} else {
+				monthStatement = "in every month from " + months[firstMonth-1] + " through " + months[11];
+			}
 		} else if (secondMonth != "" && firstMonth != "*") {
 			monthStatement = "in every " + secondMonth + " month from " + months[firstMonth-1] + " through " + months[11];
 		} else {
@@ -409,7 +414,11 @@ class Cron extends Operation {
 		var firstDay = day.split('\/').splice(0, 1);
 		var secondDay = this.generateOrdinalNumerals(day);
 		if (secondDay == "1st") {
-			dayStatement = "on every day-of-week from " + days[firstDay-1] + " through " + days[6];
+			if (firstDay == "*") {
+				dayStatement = "on every day-of-week";			
+			} else {
+				dayStatement = "on every day-of-week from " + days[firstDay-1] + " through " + days[6];
+			}
 		} else  if (secondDay != "" && firstDay != "*") {
 			dayStatement = "on every " + secondDay + " day-of-week from " + days[firstDay-1] + " through " + days[6];
 		} else {
