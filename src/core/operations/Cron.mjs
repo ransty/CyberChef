@@ -69,6 +69,17 @@ class Cron extends Operation {
         return secondNumber + (s[(v - 20) % 10] || s[v] || s[0]);
     }
 
+    generateList(input, lowerBound, upperBound) {
+	var arr = [];
+	arr = input.split(",");
+	for (var i = 0; i < arr.length; i++) {
+		if (arr[i] == "" || this.compareLengths(arr[i], lowerBound, upperBound)) {
+			return [];
+		}
+	}
+	return arr;
+    }
+
     /**
      * @param {string} input
      * @param {Object[]} args
@@ -109,29 +120,50 @@ class Cron extends Operation {
 	    var secondMinute = minute.split("\/").splice(1, 1);
         }
 
-        var minuteArray = []
+        var minuteArray = [];
         if (minute.includes(",")) {
-            minuteArray = minute.split(",");
-            for (var i = 0; i < minuteArray.length; i++) {
-                if (minuteArray[i] == "" || this.compareLengths(minuteArray[i], 0, 59)) {
-                    return "invalid CRON expression";
-                }
-            }
+        	minuteArray = this.generateList(minute, 0, 59);
+		if (minuteArray.length == 0) {
+			return "invalid CRON expression";
+		}
         }
 
         if (hour.includes("-") && this.compareRanges(hour, 0, 23)) {
             return "invalid CRON expression";
         }
+	
+	var hourArray = [];
+	if (hour.includes(",")) {
+	        hourArray = this.generateList(hour, 0, 23);
+		if (hourArray.length == 0) {
+			return "invalid CRON expression";
+		}
+	}
 
-        var hourArray = []
-        if (hour.includes(",")) {
-            hourArray = hour.split(",");
-            for (var i = 0; i < hourArray.length; i++) {
-                if (hourArray[i] == "" || this.compareLengths(hourArray[i], 0, 23)) {
-                    return "invalid CRON expression";
-                }
-            }
-        }
+	var dayOfMonthArray = [];
+	if (dayOfMonth.includes(",")) {
+		dayOfMonthArray = this.generateList(dayOfMonth, 1, 31);
+		if (dayOfMonthArray.length == 0) {
+			return "invalid CRON expression";
+		}
+	}
+
+	var dayArray = [];
+	if (day.includes(",")) {
+		dayArray = this.generateList(day, 1, 7);
+		if (dayArray.length == 0) {
+			return "invalid CRON expression";
+		}
+	}
+		
+	var monthArray = [];
+	if (month.includes(",")) {
+		monthArray = this.generateList(month, 1, 31);
+		if (monthArray.length == 0) {
+			return "invalid CRON expression";
+		}
+	}
+
 
         if (hour.includes("\/")) {
 	    var secondHour = hour.split("\/").splice(1, 1);
@@ -373,6 +405,16 @@ class Cron extends Operation {
                     return "not a valid CRON expression";
                 }
                 dayStatement = "on every day-of-week from " + days[parseInt(day.split('-').splice(0, 1))-1] + " through " + days[parseInt(day.split('-').splice(1, 1)) - 1];
+	    } else if (day.includes("\/")) {
+		var firstDay = day.split('\/').splice(0, 1);
+		var secondDay = this.generateOrdinalNumerals(day);
+		if (secondDay == "1st") {
+			dayStatement = "on every day-of-week from " + days[firstDay-1] + " through " + days[6];
+		} else  if (secondDay != "" && firstDay != "*") {
+			dayStatement = "on every " + secondDay + " day-of-week from " + days[firstDay-1] + " through " + days[6];
+		} else {
+			dayStatement = "on every " + secondDay + " day-of-week";
+		}
             } else {
                 dayStatement = "on " + days[parseInt(day)-1];
             }
